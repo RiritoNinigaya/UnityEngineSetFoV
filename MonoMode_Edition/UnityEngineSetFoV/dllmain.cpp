@@ -3,6 +3,7 @@
 #include <format>
 #include "UnityResolveByIssuimo/UnityResolve.hpp"
 #include "CMDFix.h"
+#include <exception>
 using I = UnityResolve;
 using IM = UnityResolve::Method;
 using IC = UnityResolve::Class;
@@ -12,7 +13,8 @@ using IA = UnityResolve::Assembly;
 using II = UnityResolve::UnityType;
 DWORD WINAPI ThreadZ() 
 {
-    UnityResolve::Init(GetModuleHandleA("mono-2.0-bdwgc.dll"), UnityResolve::Mode::Mono); //It is Mono Library(mono for Unity3D is Fully Free)
+    HMODULE mod = GetModuleHandleA("mono-2.0-bdwgc.dll");
+    UnityResolve::Init(mod); //It is Mono Library(mono for Unity3D is Fully Free)
     FILE* fp;
     freopen_s(&fp, "CONOUT$", "w", stdout);
     AllocConsole();
@@ -22,13 +24,21 @@ DWORD WINAPI ThreadZ()
         if (GetAsyncKeyState(VK_DELETE) & 1) {
             auto CoreModule = UnityResolve::Get("UnityEngine.CoreModule.dll");
             auto camerafunction = CoreModule->Get("Camera", "UnityEngine");
-            float fov = camerafunction->GetValue<float>(camerafunction, "fieldOfView");
+            auto instance = UnityResolve::UnityType::Camera::GetMain();
+            float fov = camerafunction->GetValue<float>(instance, "fieldOfView");
             std::string formattio = std::format("{}", fov);
             std::string str_fov = (std::string)"FoV Value: " + formattio.c_str();
             PrintCMD(str_fov.c_str());
         }
-        return TRUE;
+        else if (GetAsyncKeyState(VK_INSERT) & 1) {
+            auto CoreModule = UnityResolve::Get("UnityEngine.CoreModule.dll");
+            auto camerafunction = CoreModule->Get("Camera", "UnityEngine");
+            auto instance = UnityResolve::UnityType::Camera::GetMain();
+            camerafunction->SetValue<float>(instance, "fieldofView", 120.F);
+        }
+        
     }
+    return TRUE;
 }
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
